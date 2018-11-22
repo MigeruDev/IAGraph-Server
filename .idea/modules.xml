@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/IATest.iml" filepath="$PROJECT_DIR$/.idea/IATest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/IAGraph-Server.iml" filepath="$PROJECT_DIR$/.idea/IAGraph-Server.iml" />
     </modules>
   </component>
 </project>
