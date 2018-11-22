@@ -18,7 +18,7 @@ search = BlindSearch()
 
 @app.route('/')
 def index():
-    return 'FSAFSAFSAFAS HEROKU'
+    return 'xd'
 
 @app.route("/graph", methods = ['GET'])
 def getNodes():
