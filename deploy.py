@@ -10,10 +10,10 @@ from server.BlindSearch import BlindSearch
 app = Flask(__name__)
 CORS(app)
 #Create a connection to mongodb
-MONGO_URI = os.environ.get('MONGODB_URI')
+MONGO_URI = os.environ.get('MONGODB_URI') #Heroku & Local
 
 client = pymongo.MongoClient(MONGO_URI)
-mydb = client["iagraph"]
+mydb = client["IAGraph"]                  #IAGraph for Local - iagraph for Heroku
 search = BlindSearch()
 
 @app.route('/')
@@ -52,4 +52,5 @@ def blindSearch():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='127.0.0.1',port=port) #for local
+    #app.run(host='0.0.0.0', port=port) #for Heroku

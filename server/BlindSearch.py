@@ -77,8 +77,8 @@ class BlindSearch():
     def command(self, mydb, start, end, algorithm):
 
         command = { 'BFS': self.bfs,
-                    'DFS': self.depth_first_search_NR,
-                    'IDDFS': self.iterative_deepening_dfs,
+                    'DFS': self.dfs,
+                    'IDDFS': self.iddfs,
                     'UCS': self.uniform_cost_search}
 
         func = command.get(algorithm, lambda: "Invalid command")
@@ -91,7 +91,6 @@ class BlindSearch():
     (nodes which are directly connected to source node).
     You must then move towards the next-level neighbour nodes.
     '''
-
     def bfs(self, mydb, start, end):
         #print('------------Algoritmo de búsqueda de amplitud 2------------')
         #print('%20s%20s' % ("Cola", "Extraer"))
@@ -136,34 +135,44 @@ class BlindSearch():
     It involves exhaustive searches of all the nodes by going ahead, if possible, 
     else by backtracking.
     '''
-    def depth_first_search_NR(self,mydb,start, goal):
-        print('----------Algoritmo de búsqueda de profundidad-----------')
-        print('%20s%20s' % ("Cola", "Extraer"))
-        print('%20s' % (start))
-        nodes = mydb["nodes"]
+    def dfs(self, mydb, start, goal):
+        #print('------------Algoritmo de búsqueda de profundidad 2----------')
+        #print('%20s%20s' % ("Cola", "Extraer"))
+        #print('%20s' % (start))
+        search = {}
+        search['$set'] = {'_id':'DFS',
+                         'queue':[[start]],
+                         'pop':[''],
+                         'path':[],
+                         'start':start,
+                         'goal':goal}
+        nodes = mydb['nodes']
+        queue = [(start,[start])]
+        visited = set()
 
-        queue = [(start, [start])]
-        
         while queue:
-            (vertex, path) = queue.pop()
+            vertex, path = queue.pop(0)
+            visited.add(vertex)
             hijos = nodes.find_one({"_id": vertex}, {"_id": 0, "hijos": 1})
-            # Search the adjancent nodes of the sons from the vertex node.
-            #hijos["hijos"].sort()
-            for next in set(hijos["hijos"]) - set(path):
-                if next == goal:
-                    return path + [next]
-                else:
-                    queue.append((next, path + [next]))
+            #hijos['hijos'].sort()
+            if vertex == goal:
+                #print('%40s' % (vertex))
+                search['$set']['queue'].append([''])
+                search['$set']['pop'].append(goal)
+                search['$set']['path'] = path
+                mydb['search'].update_one({'_id': 'DFS'}, search, True)
+                return 'Se ha encontrado una solución'
+            else:
+                for next in hijos['hijos']:
+                    if next not in visited:
+                        visited.add(next)
+                        queue.insert(0,(next,path+[next]))
 
-    def depth_first_search_R(self,mydb, start, goal, path=None):
-        nodes = mydb["nodes"]
-        hijos = nodes.find_one({"_id": start}, {"_id": 0, "hijos": 1})
-        if path is None:
-            path = [start]
-        if start == goal:
-            yield path
-        for next in set(hijos["hijos"]) - set(path):
-            yield from self.depth_first_search_R(mydb, next, goal, path+[next])
+            #print('%20s' % ([x for x, y in queue]), end='')
+            #print('%20s' % (vertex))
+            search['$set']['queue'].append([x for x, y in queue])
+            search['$set']['pop'].append(vertex)
+        mydb['search'].update_one({'_id': 'DFS'}, search, True)
 
 
     '''
@@ -171,47 +180,74 @@ class BlindSearch():
     the ‘vanilla’ depth-first search algorithm, with an added constraint 
     on the total depth explored per iteration.
     '''
-    def iterative_deepening_dfs(self,mydb, root, goal, maximum_depth: int = 10):
-        """
-        Return the IDDFS path from the root node to the node with the goal label.
-        Args:
-            root: the node to start at
-            goal: the label of the goal node
-            maximum_depth: the maximum depth to search
-        Returns: a list with the nodes from root to goal
-        Raises: value error if the goal isn't in the graph
-        """
-        nodes = mydb["nodes"]
+    def iddfs(self, mydb,start, goal):
+        #print('------------Algoritmo de búsqueda de profundidad 2----------')
+        #print('%20s%20s' % ("Cola", "Extraer"))
+        #print('%20s' % (start))
+        search = {}
+        search['$set'] = {'_id': 'IDDFS',
+                          'queue': [[start]],
+                          'pop': [''],
+                          'path': [],
+                          'start': start,
+                          'goal': goal}
+        nodes = mydb['nodes']
+        queue = []
+        visited = set()
+        visited.add(start)
+        hijos = nodes.find_one({"_id": start}, {"_id": 0, "hijos": 1})
+        hijos['hijos'].sort()
+        for node in hijos['hijos']:
+            visited.add(node)
+            queue.append((node,[start]))
+        #print('%20s' % ([x for x, y in queue]), end='')
+        #print('%20s' % (start))
+        search['$set']['queue'].append([x for x,y in queue])
+        search['$set']['pop'].append(start)
+        while queue:
+            vertex, path = queue.pop(0)
+            visited.add(vertex)
+            hijos = nodes.find_one({"_id": vertex}, {"_id": 0, "hijos": 1})
+            hijos['hijos'].sort()
+            aux = [x for x in hijos['hijos'] if x not in visited]
+            #print('%20s'%(aux+[x for x,y in queue]),end='')
+            #print('%20s'%(vertex))
+            search['$set']['queue'].append(aux+[x for x,y in queue])
+            search['$set']['pop'].append(vertex)
+            if vertex == goal:
+                #print('%40s' % (vertex))
+                search['$set']['queue'].append([''])
+                search['$set']['pop'].append(goal)
+                search['$set']['path'] = path + [vertex]
+                mydb['search'].update_one({'_id': 'IDDFS'}, search, True)
+                #return path + [vertex]
+                return 'Se ha encontrado una solución'
+            else:
+                while queue:
+                    node, path2 = queue.pop(0)
+                    visited.add(node)
+                    if node == goal:
+                        #print('%40s' % (node))
+                        search['$set']['queue'].append([''])
+                        search['$set']['pop'].append(goal)
+                        search['$set']['path'] = path + [node]
+                        mydb['search'].update_one({'_id': 'IDDFS'}, search, True)
+                        #return path + [node]
+                        return 'Se ha encontrado una solución'
+                    hijos = nodes.find_one({"_id": node}, {"_id": 0, "hijos": 1})
+                    hijos['hijos'].sort()
+                    aux = aux + [x for x in hijos['hijos']
+                                 if x not in aux]
 
-        for depth in range(0, maximum_depth):
-            result = self._dls(nodes,[root], goal, depth)
-            if result is None:
-                continue
-            return result
+                    #print('%20s' % (aux+[x for x, y in queue]), end='')
+                    #print('%20s' % (node))
+                    search['$set']['queue'].append(aux + [x for x,y in queue])
+                    search['$set']['pop'].append(node)
+            for node in aux:
+                visited.add(node)
+                queue.append((node, path+[node]))
+        mydb['search'].update_one({'_id': 'IDDFS'}, search, True)
 
-        raise ValueError('goal not in graph with depth {}'.format(maximum_depth))
-
-    def _dls(self,nodes, path, goal, depth: int):
-        """
-        Return the depth limited search path from a subpath to the goal.
-        Args:
-            path: the current path of Nodes being taken
-            goal: the label of the goal node
-            depth: the depth in the graph to search
-        Returns: the path if it exists, none otherwise
-        """
-        current = path[-1]
-        hijos = nodes.find_one({"_id": current}, {"_id": 0, "hijos": 1})
-        if current == goal:
-            return path
-        if depth <= 0:
-            return None
-        for edge in hijos["hijos"]:
-            new_path = list(path)
-            new_path.append(edge)
-            result = self._dls(nodes, new_path, goal, depth - 1)
-            if result is not None:
-                return result
 
     '''
     This search strategy is for weighted graphs. Each edge has a weight, and vertices are 
