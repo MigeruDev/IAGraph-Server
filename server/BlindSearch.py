@@ -79,7 +79,7 @@ class BlindSearch():
         command = { 'BFS': self.bfs,
                     'DFS': self.dfs,
                     'IDDFS': self.iddfs,
-                    'UCS': self.uniform_cost_search}
+                    'UCS': self.ucs}
 
         func = command.get(algorithm, lambda: "Invalid command")
         return  func(mydb,start,end)
@@ -255,30 +255,57 @@ class BlindSearch():
     into the graph the cost accumulates. Check out Artificial Intelligence - Uniform Cost Search 
     if you are not familiar with how UCS operates.
     '''
-    def uniform_cost_search(self, mydb, start, goal):
+    def ucs(self, mydb, start, goal):
+        #print('------------Algoritmo de costo uniforme----------')
+        #print('%20s%20s' % ("Cola", "Extraer"))
+        #print('%20s' % (start))
+        search = {}
+        search['$set'] = {'_id': 'UCS',
+                          'queue': [[start]],
+                          'pop': [''],
+                          'total_cost':[''],
+                          'path': [],
+                          'start': start,
+                          'goal': goal}
         visited = set()
         queue = PriorityQueue()
-        queue.put((0, start))
+        queue.put((0, start,[start]))
 
         nodes = mydb["nodes"]
         edges = mydb["edges"]
 
-        #path = [start]
-
         while queue:
-            cost, node = queue.get()
-            #path += [node]
+            cost, node,path = queue.get()
+
             if node not in visited:
                 visited.add(node)
 
                 if node == goal:
-                    return queue
+                    #print('%20s' % (path ), end='')
+                    #print('%20s' % (node), end='')
+                    #print('%20s' % (cost))
+                    #return path
+                    search['$set']['queue'].append(path)
+                    search['$set']['pop'].append(node)
+                    search['$set']['total_cost'].append(cost)
+                    search['$set']['path'] = path
+                    mydb['search'].update_one({'_id': 'UCS'}, search, True)
+
+                    return 'Se ha encontrado una solución'
 
                 hijos = nodes.find_one({"_id": node}, {"_id": 0, "hijos": 1})
 
                 for i in hijos["hijos"]:
                     if i not in visited:
-                        peso = edges.find_one({"from": node,"to":i}, {"_id": 0, "weight": 1})
-                        total_cost = cost + peso["weight"]
-                        queue.put((total_cost, i))
-                        #path += [i]
+                        peso = edges.find_one({"source": node,"target":i}, {"_id": 0, "value": 1})
+                        total_cost = cost + peso["value"]
+                        queue.put((total_cost, i,path+[i]))
+
+                        aux = str(i)+"("+str(peso['value'])+")"
+                        #print('%20s'%(path+[i]),end='')
+                        #print('%20s'%(aux),end='')
+                        #print('%20s'%(total_cost))
+                        search['$set']['queue'].append(path+[i])
+                        search['$set']['pop'].append(aux)
+                        search['$set']['total_cost'].append(total_cost)
+        mydb['search'].update_one({'_id': 'UCS'}, search, True)
