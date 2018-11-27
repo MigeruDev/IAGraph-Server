@@ -1,78 +1,10 @@
 import random
+import threading
+import time
 from queue import PriorityQueue
 
 
 class BlindSearch():
-
-    # Numero de nodos, max hijos, connectionDB, MaxPeso
-    def randomGraph(self, N, Nsons, mydb, maxHN:int=100, maxGN:int=100):
-        #Drop collections if exist
-        mydb["nodes"].drop()
-        mydb["edges"].drop()
-        mydb['search'].drop()
-        #Create collections
-        nodes = mydb["nodes"]
-        edges = mydb["edges"]
-
-        nodos = set(i for i in range(N))
-        #S is an auxiliary nodes set
-        S = set(nodos)
-        checked = set()
-        # Pick a random node, and mark it as visited and the current node
-        current_node = random.sample(S, 1).pop()
-        S.remove(current_node)
-        checked.add(current_node)
-        # Create a random connected graph
-        while S:
-            # Randomly pick the next node from the neighbors of the current node
-            # As we are generating a connected graph, we assume a complete graph
-            neighbor = random.sample(nodos, 1).pop()
-            # If the new node hasn't been visited, add the edge from current to new
-            if neighbor not in checked:
-                # Consultamos si el nodo actual tiene hijos
-                current_node_sons = nodes.find_one({"_id": current_node}, {"_id": 0, "hijos": 1})
-                # Verificamos que no sobrepase el limite de hijos que puede tener (Nsons)
-                if (current_node_sons==None or len(current_node_sons["hijos"])<Nsons)\
-                        and current_node != neighbor:
-                    #Se crea un documento que contenga el nodo y sus hijos
-                    record = {}
-                    record["$set"] = {"_id": current_node,"Gn":random.randint(0, maxGN)}
-                    record['$addToSet'] = {"hijos": neighbor}
-
-                    #Se inserta el documento dentro de la collection nodes
-                    nodes.update_one({"_id":current_node},record,True)
-                    current_node_sons = nodes.find_one({"_id":current_node}, {"_id":0,"hijos":1})
-                    #Se agregan hijos aleatorios
-                    for i in range(0,Nsons-len(current_node_sons["hijos"]),1):
-                        random_node = random.sample(nodos, 1).pop()
-                        if random_node != current_node:
-                            record = {}
-                            record["$set"] = {"_id": current_node,"Gn":random.randint(0, maxGN)}
-                            record['$addToSet'] = {"hijos": random_node}
-                            nodes.update_one({"_id": current_node}, record, True)
-                            record = {}
-                            record["$set"] = {"source": current_node, "target": random_node,
-                                              "value": random.randint(0, maxHN)}
-                            # Se inserta la arista
-                            edges.update_one({"source": current_node, "target": random_node}, record, True)
-
-                    record = {}
-                    record["$set"] = {"_id": neighbor,"Gn":random.randint(0, maxGN)}
-                    record['$setOnInsert'] = {"hijos": []}
-                    nodes.update_one({"_id": neighbor}, record, True)
-
-                    record = {}
-                    record["$set"] = {"source": current_node,"target":neighbor,
-                                      "value":random.randint(0, maxHN)}
-                    #Se inserta la arista
-                    edges.update_one({"source": current_node,"target":neighbor}, record, True)
-
-                    S.remove(neighbor)
-                    checked.add(neighbor)
-
-            # Set the new node as the current node.
-            current_node = neighbor
-        return ''
 
     def command(self, mydb, start, end, algorithm):
 
@@ -95,13 +27,15 @@ class BlindSearch():
         #print('------------Algoritmo de búsqueda de amplitud 2------------')
         #print('%20s%20s' % ("Cola", "Extraer"))
         #print('%20s' % (start))
+        start_time = time.time()
         search = {}
         search['$set'] = {'_id':'BFS',
                   'queue':[[start]],
                   'pop':[''],
                   'path':[],
                   'start':start,
-                  'goal':end}
+                  'goal':end,
+                    'complexity':0}
         nodes = mydb['nodes']
         queue = [(start,[start])]
         visited = set()
@@ -116,6 +50,8 @@ class BlindSearch():
                 search['$set']['queue'].append([''])
                 search['$set']['pop'].append(end)
                 search['$set']['path'] = path
+                end_time = time.time()
+                search['$set']['complexity'] = end_time - start_time
                 mydb['search'].update_one({'_id':'BFS'},search,True)
                 return 'Se ha encontrado una solución'
             else:
@@ -127,6 +63,8 @@ class BlindSearch():
             #print('%20s' % (vertex))
             search['$set']['queue'].append([x for x, y in queue])
             search['$set']['pop'].append(vertex)
+        end_time = time.time()
+        search['$set']['complexity'] = end_time - start_time
         mydb['search'].update_one({'_id': 'BFS'}, search, True)
 
 
@@ -139,13 +77,15 @@ class BlindSearch():
         #print('------------Algoritmo de búsqueda de profundidad 2----------')
         #print('%20s%20s' % ("Cola", "Extraer"))
         #print('%20s' % (start))
+        start_time = time.time()
         search = {}
         search['$set'] = {'_id':'DFS',
                          'queue':[[start]],
                          'pop':[''],
                          'path':[],
                          'start':start,
-                         'goal':goal}
+                         'goal':goal,
+                          'complexity':0}
         nodes = mydb['nodes']
         queue = [(start,[start])]
         visited = set()
@@ -160,6 +100,8 @@ class BlindSearch():
                 search['$set']['queue'].append([''])
                 search['$set']['pop'].append(goal)
                 search['$set']['path'] = path
+                end_time = time.time()
+                search['$set']['complexity'] = end_time - start_time
                 mydb['search'].update_one({'_id': 'DFS'}, search, True)
                 return 'Se ha encontrado una solución'
             else:
@@ -172,6 +114,8 @@ class BlindSearch():
             #print('%20s' % (vertex))
             search['$set']['queue'].append([x for x, y in queue])
             search['$set']['pop'].append(vertex)
+        end_time = time.time()
+        search['$set']['complexity'] = end_time - start_time
         mydb['search'].update_one({'_id': 'DFS'}, search, True)
 
 
@@ -184,13 +128,15 @@ class BlindSearch():
         #print('------------Algoritmo de búsqueda de profundidad 2----------')
         #print('%20s%20s' % ("Cola", "Extraer"))
         #print('%20s' % (start))
+        start_time = time.time()
         search = {}
         search['$set'] = {'_id': 'IDDFS',
                           'queue': [[start]],
                           'pop': [''],
                           'path': [],
                           'start': start,
-                          'goal': goal}
+                          'goal': goal,
+                          'complexity':0}
         nodes = mydb['nodes']
         queue = []
         visited = set()
@@ -219,6 +165,8 @@ class BlindSearch():
                 search['$set']['queue'].append([''])
                 search['$set']['pop'].append(goal)
                 search['$set']['path'] = path + [vertex]
+                end_time = time.time()
+                search['$set']['complexity'] = end_time - start_time
                 mydb['search'].update_one({'_id': 'IDDFS'}, search, True)
                 #return path + [vertex]
                 return 'Se ha encontrado una solución'
@@ -231,6 +179,8 @@ class BlindSearch():
                         search['$set']['queue'].append([''])
                         search['$set']['pop'].append(goal)
                         search['$set']['path'] = path + [node]
+                        end_time = time.time()
+                        search['$set']['complexity'] = end_time - start_time
                         mydb['search'].update_one({'_id': 'IDDFS'}, search, True)
                         #return path + [node]
                         return 'Se ha encontrado una solución'
@@ -246,6 +196,8 @@ class BlindSearch():
             for node in aux:
                 visited.add(node)
                 queue.append((node, path+[node]))
+        end_time = time.time()
+        search['$set']['complexity'] = end_time - start_time
         mydb['search'].update_one({'_id': 'IDDFS'}, search, True)
 
 
@@ -259,6 +211,7 @@ class BlindSearch():
         #print('------------Algoritmo de costo uniforme----------')
         #print('%20s%20s' % ("Cola", "Extraer"))
         #print('%20s' % (start))
+        start_time = time.time()
         search = {}
         search['$set'] = {'_id': 'UCS',
                           'queue': [[start]],
@@ -266,7 +219,8 @@ class BlindSearch():
                           'total_cost':[''],
                           'path': [],
                           'start': start,
-                          'goal': goal}
+                          'goal': goal,
+                          'complexity':0}
         visited = set()
         queue = PriorityQueue()
         queue.put((0, start,[start]))
@@ -289,6 +243,8 @@ class BlindSearch():
                     search['$set']['pop'].append(node)
                     search['$set']['total_cost'].append(cost)
                     search['$set']['path'] = path
+                    end_time = time.time()
+                    search['$set']['complexity'] = end_time - start_time
                     mydb['search'].update_one({'_id': 'UCS'}, search, True)
 
                     return 'Se ha encontrado una solución'
@@ -308,4 +264,97 @@ class BlindSearch():
                         search['$set']['queue'].append(path+[i])
                         search['$set']['pop'].append(aux)
                         search['$set']['total_cost'].append(total_cost)
+        end_time = time.time()
+        search['$set']['complexity'] = end_time - start_time
         mydb['search'].update_one({'_id': 'UCS'}, search, True)
+
+
+    '''
+    Bidirectional-Search
+    '''
+
+    def hilo1(self, mydb, start, goal, out_init, out_end):
+        if len(self.getParents(mydb,goal[0])) == 0:
+            return None
+        cola = [start]
+        nodes = mydb['nodes']
+        while cola and goal:
+            print("colaH1= ",cola)
+            evalue_node = cola[0]
+            print("enH1=", evalue_node)
+            hijos = nodes.find_one({"_id": evalue_node}, {"_id": 0, "hijos": 1})
+            for node_son in hijos['hijos'].__reversed__():
+                if not node_son in cola and not node_son in out_init:
+                    cola = [node_son] + cola
+            if evalue_node in goal:
+                goal.remove(evalue_node)
+            if evalue_node in out_end:
+                break
+            out_init.append(evalue_node)
+
+            cola.remove(evalue_node)
+
+        if len(goal):
+            return None
+
+    def hilo2(self, mydb, start, goal, out_init, out_end):
+        nodes = mydb['nodes']
+        hijos = nodes.find_one({"_id": start[0]}, {"_id": 0, "hijos": 1})
+
+        if len(hijos['hijos']) == 0:
+            return None
+
+        cola = [goal]
+        while cola and start:
+            print("colaH2= ",cola)
+            evalue_node = cola[0]
+            print("enH2= ", evalue_node)
+            for node_son in self.getParents(mydb,evalue_node).__reversed__():
+                if not node_son in cola and not node_son in out_end:
+                    cola = [node_son] + cola
+            if evalue_node in start:
+                start.remove(evalue_node)
+            if evalue_node in out_init:
+                break
+            out_end.insert(0, evalue_node)
+            cola.remove(evalue_node)
+
+        if len(start):
+            return None
+
+    def getParents(self,mydb,node):
+        edges = mydb['edges']
+        link = edges.find({'target':node})
+        parents = []
+        for i in link:
+            parents.append(i['source'])
+        return parents
+
+
+    # busqueda bidireccional.
+    def bs(self, mydb, start, goal):
+        start_time = time.time()
+        search = {}
+        search['$set'] = {'_id': 'BS',
+                          'queue': [[start]],
+                          'pop': [''],
+                          'path': [],
+                          'start': start,
+                          'goal': goal,
+                          'complexity': 0}
+        out_init = []
+        out_end = []
+
+        t1 = threading.Thread( self.hilo1(mydb, start, [goal], out_init, out_end))
+        t2 = threading.Thread( self.hilo2(mydb, [start], goal, out_init, out_end))
+
+        t1.start()
+        t2.start()
+
+        t1.join()
+        t2.join()
+        end_time = time.time()
+        search['$set']['complexity'] = end_time - start_time
+        search['$set']['queue'] = out_init
+        mydb['search'].update_one({'_id': 'BS'}, search, True)
+        return out_init + out_end

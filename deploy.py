@@ -6,6 +6,8 @@ from flask import Flask
 from flask import request
 from flask_cors import CORS, cross_origin
 from server.BlindSearch import BlindSearch
+from server.GraphGenerator import GraphGenerator
+from server.HeuristicSearch import HeuristicSearch
 
 app = Flask(__name__)
 CORS(app)
@@ -13,12 +15,14 @@ CORS(app)
 MONGO_URI = os.environ.get('MONGODB_URI') #Heroku & Local
 
 client = pymongo.MongoClient(MONGO_URI)
-mydb = client["IAGraph"]                  #IAGraph for Local - iagraph for Heroku
-search = BlindSearch()
+mydb = client["iagraph"]                  #IAGraph for Local - iagraph for Heroku
+graph = GraphGenerator()
+blind_search = BlindSearch()
+heuristic_search = HeuristicSearch()
 
 @app.route('/')
 def index():
-    return 'xd'
+    return ':v'
 
 @app.route("/graph", methods = ['GET'])
 def getNodes():
@@ -35,7 +39,7 @@ def generateRandom():
     maxHijos = data['maxHijos']
     maxHN = data['maxHN']
     maxGN = data['maxGN']
-    search.randomGraph(noNodos,maxHijos,mydb,maxHN,maxGN)
+    graph.randomGraph(noNodos,maxHijos,mydb,maxHN,maxGN)
     return dumps({'message' : 'SUCCESS'})
 
 @app.route("/blind_search", methods = ['POST'])
@@ -45,12 +49,28 @@ def blindSearch():
     start = data['start']
     goal = data['goal']
     algorithm = data['search']
-    search.command(mydb,start,goal,algorithm)
+    blind_search.command(mydb,start,goal,algorithm)
     result = mydb.search.find_one({'_id': algorithm})
     return dumps(result)
+
+@app.route("/heuristic_search", methods = ['POST'])
+def heuristicSearch():
+    data = json.loads(request.data)
+    #data = request.form
+    start = data['start']
+    goal = data['goal']
+    algorithm = data['search']
+    heuristic_search.command(mydb,start,goal,algorithm)
+    result = mydb.search.find_one({'_id': algorithm})
+    return dumps(result)
+
+@app.route("/complexity", methods = ['GET'])
+def getComplexity():
+    complexity = mydb.complexity.find()
+    return dumps(complexity)
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='127.0.0.1',port=port) #for local
-    #app.run(host='0.0.0.0', port=port) #for Heroku
+    #app.run(host='127.0.0.1',port=port) #for local
+    app.run(host='0.0.0.0', port=port) #for Heroku
