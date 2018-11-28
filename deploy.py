@@ -73,13 +73,14 @@ def getComplexity():
 
 @app.route("/upload", methods = ['POST'])
 def upload_file():
-    #print(request.files)
+    print(request.files)
     if request.method =='POST':
         files = request.files.getlist('file')
-        #print('files',files)
+        print('files',files)
         if files:
             for file in files:
                 filename = secure_filename(file.filename)
+                print("path= ",os.path)
                 file.save(os.path.join(".\\uploads",filename))
             graph.uploadGraph(mydb)
             return "Succesfuly brooooooooo"
