@@ -71,25 +71,6 @@ def getComplexity():
     complexity = mydb.complexity.find()
     return dumps(complexity)
 
-@app.route("/uploadOne", methods=['POST'])
-def upload_fileOne():
-    print(request.files)
-    # check if the post request has the file part
-    if 'file' not in request.files:
-        print('no file in request')
-        return ""
-    file = request.files['file']
-    if file.filename == '':
-        print('no selected file')
-        return ""
-    if file:
-        print("Oilooooooo")
-        filename = secure_filename(file.filename)
-        file.save(os.path.join( ".\\uploads", filename))
-        return ""
-    print("end")
-    return ""
-
 @app.route("/upload", methods = ['POST'])
 def upload_file():
     #print(request.files)

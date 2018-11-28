@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/IAGraph-Server.iml" filepath="$PROJECT_DIR$/.idea/IAGraph-Server.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../MaciasMiguel_Interciclo/.idea/MaciasMiguel_Interciclo.iml" filepath="$PROJECT_DIR$/../MaciasMiguel_Interciclo/.idea/MaciasMiguel_Interciclo.iml" />
     </modules>
   </component>
 </project>
