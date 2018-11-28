@@ -1,0 +1,10 @@
+1,Ambato,10
+2,Azogues,3
+3,Babahoyo,2
+4,Cuenca,20
+5,Esmeraldas,1
+6,Guaranda,5
+7,Guayaquil,30
+8,Ibarra,4
+9,Latacunga,10
+10,Loja,4

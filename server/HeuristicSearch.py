@@ -34,7 +34,11 @@ class HeuristicSearch():
                           'path': [],
                           'start': start,
                           'goal': goal,
-                          'complexity': 0}
+                          'complexity': 0,
+                          'temporal':0,
+                          'spatial':0}
+        promedio = 0
+        cont = 0
         queue = [(0,start)]
         path = []
         nodes = mydb['nodes']
@@ -46,7 +50,8 @@ class HeuristicSearch():
 
             queue = []
             hijos = nodes.find_one({"_id": current}, {"_id": 0})
-
+            promedio += len(hijos['hijos'])
+            cont += 1
             if current == goal:
                 #print('%40s'%(current))
                 #return path
@@ -55,6 +60,8 @@ class HeuristicSearch():
                 search['$set']['pop'].append(current)
                 search['$set']['path'] = path
                 search['$set']['complexity'] = end_time-start_time
+                search['$set']['temporal'] = len(path)
+                search['$set']['spatial'] = (promedio / cont)
                 mydb['search'].update_one({'_id': 'HC'}, search, True)
 
                 return 'Se ha encontrado una solución'
@@ -93,7 +100,11 @@ class HeuristicSearch():
                           'path': [],
                           'start': start,
                           'goal': goal,
-                          'complexity':0}
+                          'complexity':0,
+                          'temporal':0,
+                          'spatial':0}
+        promedio = 0
+        cont = 0
         queue = PriorityQueue()
         queue.put((0,start,[start]))
         nodes = mydb['nodes']
@@ -102,7 +113,8 @@ class HeuristicSearch():
             cost, current,path = queue.get()
             visited.add(current)
             hijos = nodes.find_one({'_id':current},{'_id':0})
-
+            promedio += len(hijos['hijos'])
+            cont += 1
             if current == goal:
                 #print('%40s'%(current))
                 #return path
@@ -111,6 +123,8 @@ class HeuristicSearch():
                 search['$set']['path'] = path
                 end_time = time.time()
                 search['$set']['complexity'] = end_time - start_time
+                search['$set']['temporal'] = (promedio / cont)**len(path)
+                search['$set']['spatial'] = (promedio / cont)**len(path)
                 mydb['search'].update_one({'_id': 'BestFS'}, search, True)
 
                 return 'Se ha encontrado una solución'
@@ -145,8 +159,12 @@ class HeuristicSearch():
                           'path': [],
                           'start': start,
                           'goal': goal,
-                          'complexity':0}
+                          'complexity':0,
+                          'temporal':0,
+                          'spatial':0}
         #(funcion evaluacion, heuristica, path)
+        promedio = 0
+        cont = 0
         queue = {start:(0,0,[start])}
         visited = {}
         nodes = mydb['nodes']
@@ -158,7 +176,8 @@ class HeuristicSearch():
             visited[current] = gn
 
             hijos = nodes.find_one({'_id': current}, {'_id': 0,'hijos':1})
-
+            promedio += len(hijos['hijos'])
+            cont += 1
             if current == goal:
                 #print('%40s'%(current))
                 #return path
@@ -167,6 +186,8 @@ class HeuristicSearch():
                 search['$set']['path'] = path
                 end_time = time.time()
                 search['$set']['complexity'] = end_time - start_time
+                search['$set']['temporal'] = (promedio / cont)**len(path)
+                search['$set']['spatial'] = (promedio / cont)**len(path)
                 mydb['search'].update_one({'_id': 'A*'}, search, True)
 
                 return 'Se ha encontrado una solución'
@@ -178,6 +199,8 @@ class HeuristicSearch():
                     gn = value['Gn']+hn+link['value']
                     if node in visited and gn < visited[node]:
                         node_sons = nodes.find_one({'_id': node}, {'_id': 0})
+                        promedio += len(node_sons['hijos'])
+                        cont += 1
                         for sub_node in node_sons['hijos']:
                             if sub_node in queue:
                                 sub_node_value = nodes.find_one({'_id': sub_node},
@@ -214,7 +237,11 @@ class HeuristicSearch():
                           'path': [],
                           'start': start,
                           'goal': goal,
-                          'complexity': 0}
+                          'complexity': 0,
+                          'temporal':0,
+                          'spatial':0}
+        promedio = 0
+        cont = 0
         queue = [(0, start)]
         path = []
         nodes = mydb['nodes']
@@ -226,7 +253,8 @@ class HeuristicSearch():
 
             queue = []
             hijos = nodes.find_one({"_id": current}, {"_id": 0})
-
+            promedio += len(hijos['hijos'])
+            cont += 1
             if current == goal:
                 # print('%40s'%(current))
                 # return path
@@ -235,6 +263,8 @@ class HeuristicSearch():
                 search['$set']['path'] = path
                 end_time = time.time()
                 search['$set']['complexity'] = end_time - start_time
+                search['$set']['temporal'] = (promedio / cont)**len(path)
+                search['$set']['spatial'] = (promedio / cont)**len(path)
                 mydb['search'].update_one({'_id': 'GS'}, search, True)
 
                 return 'Se ha encontrado una solución'

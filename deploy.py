@@ -5,6 +5,8 @@ from bson.json_util import dumps
 from flask import Flask
 from flask import request
 from flask_cors import CORS, cross_origin
+from werkzeug.utils import secure_filename
+
 from server.BlindSearch import BlindSearch
 from server.GraphGenerator import GraphGenerator
 from server.HeuristicSearch import HeuristicSearch
@@ -68,6 +70,39 @@ def heuristicSearch():
 def getComplexity():
     complexity = mydb.complexity.find()
     return dumps(complexity)
+
+@app.route("/uploadOne", methods=['POST'])
+def upload_fileOne():
+    print(request.files)
+    # check if the post request has the file part
+    if 'file' not in request.files:
+        print('no file in request')
+        return ""
+    file = request.files['file']
+    if file.filename == '':
+        print('no selected file')
+        return ""
+    if file:
+        print("Oilooooooo")
+        filename = secure_filename(file.filename)
+        file.save(os.path.join( ".\\uploads", filename))
+        return ""
+    print("end")
+    return ""
+
+@app.route("/upload", methods = ['POST'])
+def upload_file():
+    #print(request.files)
+    if request.method =='POST':
+        files = request.files.getlist('file')
+        #print('files',files)
+        if files:
+            for file in files:
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(".\\uploads",filename))
+            graph.uploadGraph(mydb)
+            return "Succesfuly brooooooooo"
+    return "Something went wrong xd"
 
 
 if __name__ == "__main__":

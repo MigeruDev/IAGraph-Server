@@ -35,7 +35,11 @@ class BlindSearch():
                   'path':[],
                   'start':start,
                   'goal':end,
-                    'complexity':0}
+                  'complexity':0,
+                  'temporal':0,
+                  'spatial':0}
+        promedio = 0
+        cont = 0
         nodes = mydb['nodes']
         queue = [(start,[start])]
         visited = set()
@@ -45,6 +49,8 @@ class BlindSearch():
             visited.add(vertex)
             hijos = nodes.find_one({"_id": vertex}, {"_id": 0, "hijos": 1})
             hijos['hijos'].sort()
+            promedio += len(hijos['hijos'])
+            cont += 1
             if vertex == end:
                 #print('%40s' % (end))
                 search['$set']['queue'].append([''])
@@ -52,7 +58,10 @@ class BlindSearch():
                 search['$set']['path'] = path
                 end_time = time.time()
                 search['$set']['complexity'] = end_time - start_time
+                search['$set']['temporal'] = (promedio / cont) ** len(path)
+                search['$set']['spatial'] = (promedio / cont) * len(path)
                 mydb['search'].update_one({'_id':'BFS'},search,True)
+
                 return 'Se ha encontrado una solución'
             else:
                 for node in hijos['hijos']:
@@ -85,7 +94,11 @@ class BlindSearch():
                          'path':[],
                          'start':start,
                          'goal':goal,
-                          'complexity':0}
+                          'complexity':0,
+                          'temporal':0,
+                          'spatial':0}
+        promedio = 0
+        cont = 0
         nodes = mydb['nodes']
         queue = [(start,[start])]
         visited = set()
@@ -95,6 +108,8 @@ class BlindSearch():
             visited.add(vertex)
             hijos = nodes.find_one({"_id": vertex}, {"_id": 0, "hijos": 1})
             #hijos['hijos'].sort()
+            promedio += len(hijos['hijos'])
+            cont += 1
             if vertex == goal:
                 #print('%40s' % (vertex))
                 search['$set']['queue'].append([''])
@@ -102,6 +117,8 @@ class BlindSearch():
                 search['$set']['path'] = path
                 end_time = time.time()
                 search['$set']['complexity'] = end_time - start_time
+                search['$set']['temporal'] = (promedio / cont) ** len(path)
+                search['$set']['spatial'] = (promedio / cont) * len(path)
                 mydb['search'].update_one({'_id': 'DFS'}, search, True)
                 return 'Se ha encontrado una solución'
             else:
@@ -136,7 +153,11 @@ class BlindSearch():
                           'path': [],
                           'start': start,
                           'goal': goal,
-                          'complexity':0}
+                          'complexity':0,
+                          'temporal':0,
+                          'spatial':0}
+        promedio = 0
+        cont = 0
         nodes = mydb['nodes']
         queue = []
         visited = set()
@@ -155,6 +176,8 @@ class BlindSearch():
             visited.add(vertex)
             hijos = nodes.find_one({"_id": vertex}, {"_id": 0, "hijos": 1})
             hijos['hijos'].sort()
+            promedio += len(hijos['hijos'])
+            cont += 1
             aux = [x for x in hijos['hijos'] if x not in visited]
             #print('%20s'%(aux+[x for x,y in queue]),end='')
             #print('%20s'%(vertex))
@@ -167,6 +190,8 @@ class BlindSearch():
                 search['$set']['path'] = path + [vertex]
                 end_time = time.time()
                 search['$set']['complexity'] = end_time - start_time
+                search['$set']['temporal'] = (promedio / cont) ** len(path)
+                search['$set']['spatial'] = (promedio / cont)
                 mydb['search'].update_one({'_id': 'IDDFS'}, search, True)
                 #return path + [vertex]
                 return 'Se ha encontrado una solución'
@@ -181,11 +206,15 @@ class BlindSearch():
                         search['$set']['path'] = path + [node]
                         end_time = time.time()
                         search['$set']['complexity'] = end_time - start_time
+                        search['$set']['temporal'] = (promedio / cont) ** len(path)
+                        search['$set']['spatial'] = (promedio / cont)
                         mydb['search'].update_one({'_id': 'IDDFS'}, search, True)
                         #return path + [node]
                         return 'Se ha encontrado una solución'
                     hijos = nodes.find_one({"_id": node}, {"_id": 0, "hijos": 1})
                     hijos['hijos'].sort()
+                    promedio += len(hijos['hijos'])
+                    cont += 1
                     aux = aux + [x for x in hijos['hijos']
                                  if x not in aux]
 
@@ -220,7 +249,11 @@ class BlindSearch():
                           'path': [],
                           'start': start,
                           'goal': goal,
-                          'complexity':0}
+                          'complexity':0,
+                          'temporal':0,
+                          'spatial':0}
+        promedio = 0
+        cont = 0
         visited = set()
         queue = PriorityQueue()
         queue.put((0, start,[start]))
@@ -245,12 +278,15 @@ class BlindSearch():
                     search['$set']['path'] = path
                     end_time = time.time()
                     search['$set']['complexity'] = end_time - start_time
+                    search['$set']['temporal'] = (promedio / cont) ** len(path)
+                    search['$set']['spatial'] = (promedio / cont) * len(path)
                     mydb['search'].update_one({'_id': 'UCS'}, search, True)
 
                     return 'Se ha encontrado una solución'
 
                 hijos = nodes.find_one({"_id": node}, {"_id": 0, "hijos": 1})
-
+                promedio += len(hijos['hijos'])
+                cont += 1
                 for i in hijos["hijos"]:
                     if i not in visited:
                         peso = edges.find_one({"source": node,"target":i}, {"_id": 0, "value": 1})
@@ -341,7 +377,9 @@ class BlindSearch():
                           'path': [],
                           'start': start,
                           'goal': goal,
-                          'complexity': 0}
+                          'complexity': 0,
+                          'temporal':0,
+                          'spatial':0}
         out_init = []
         out_end = []
 

@@ -84,4 +84,46 @@ class GraphGenerator():
 
         return ''
 
+    def uploadGraph(self, mydb):
+        mydb["nodes"].drop()
+        mydb["edges"].drop()
+        mydb['search'].drop()
+        # Create collections
+        nodes = mydb["nodes"]
+        edges = mydb["edges"]
+        recordN = {}
+        recordE = {}
 
+        #Comienza guardando los nodos
+        f = open('.\\uploads\\Nodo.txt')
+        data = f.readlines()
+
+        for line in data:
+            if line != '\n' and line != "":
+                nodo = line.rstrip().split(',')
+                recordN["$set"] = {"_id": int(nodo[0]),
+                                  "Gn": int(nodo[2]),
+                                  'name': nodo[1]}
+                recordN['$setOnInsert'] = {"hijos": []}
+                # Se inserta el documento dentro de la collection nodes
+                nodes.update_one({"_id": int(nodo[0])}, recordN, True)
+
+        # Comienza guardando las aristas
+        a = open('.\\uploads\\Arista.txt')
+        data = a.readlines()
+
+        for line in data:
+            if line != '\n' and line != "":
+                nodo = line.rstrip().split(',')
+                recordE["$set"] = {"source": int(nodo[0]),
+                                  "target": int(nodo[1]),
+                                  "value": int(nodo[2])}
+                hijo = {}
+                hijo['$addToSet'] = {"hijos": int(nodo[1])}
+                # Se inserta la arista
+                edges.update_one({"source": int(nodo[0]), "target": int(nodo[1])}, recordE, True)
+                nodes.update_one({"_id": int(nodo[0])}, hijo, True)
+
+        f.close()
+        a.close()
+        print("FinishHIMMMMMMMMMMMMMMMM")
