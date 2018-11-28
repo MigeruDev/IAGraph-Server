@@ -81,7 +81,7 @@ def upload_file():
             for file in files:
                 filename = secure_filename(file.filename)
                 print("path= ",os.path)
-                file.save(os.path.join(".\\uploads",filename))
+                file.save(os.path.join(".",filename))
             graph.uploadGraph(mydb)
             return "Succesfuly brooooooooo"
     return "Something went wrong xd"
